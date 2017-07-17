@@ -49,6 +49,7 @@ If you want to build with recent C++ features a recent GCC is mandatory.
 
 #### git 2.9.4 (optional)
 Wheezy comes with a pretty old git version, follow these steps to build a more recent one.
+
     wget https://www.kernel.org/pub/software/scm/git/git-2.9.4.tar.xz
     cd git-2.9.4
     ./configure
@@ -72,7 +73,7 @@ Since this library is not present on debian wheezy we have to build it ourselves
     # PREFIX being the path where you installed gcc 6.3.0
     export PATH=$PREFIX/bin:$PATH
 
-    # change prefix to you liking, this is where the Qt is going to be installed
+    # change prefix to you liking, this is where Qt is going to be installed
     PREFIX=/opt/qt-5.6.0-linux-x86_64
 
     mkdir build-qt
