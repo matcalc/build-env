@@ -13,7 +13,7 @@ Install the following packages:
     sudo apt-get update
     sudo apt-get install \
         tar bzip2 \
-        build-essential make bison gettext gcc g++ gcc-multilib g++-multilib \
+        build-essential make bison gettext texinfo gcc g++ gcc-multilib g++-multilib \
         libcups2-dev \
         libdbus-1-dev \
         libproxy-dev \
@@ -23,28 +23,31 @@ Install the following packages:
         libssl-dev \
         libfontconfig1-dev
 
-#### GCC 6.3.0 (optional)
+#### GCC 5.4.0 (optional)
 If you want to build with recent C++ features a recent GCC is mandatory.
 
-    wget --no-check-certificate https://ftp.gnu.org/gnu/gcc/gcc-6.3.0/gcc-6.3.0.tar.bz2
-    tar xf gcc-6.3.0.tar.bz2
-    cd gcc-6.3.0/contrib
+    # change this if you want to build a different version
+    VERSION=5.4.0
+    # change prefix to you liking, this is where gcc is going to be installed
+    PREFIX=/opt/gcc-$VERSION
+
+    wget --no-check-certificate https://ftp.gnu.org/gnu/gcc/gcc-$VERSION/gcc-$VERSION.tar.bz2
+    tar xf gcc-$VERSION.tar.bz2
+    cd gcc-$VERSION/contrib
     ./download_prerequisites
     cd ../../
     mkdir build-gcc
     cd build-gcc
 
-    # change prefix to you liking, this is where the new gcc is going to be installed
-    PREFIX=/opt/gcc-6.3.0
+    ../gcc-$VERSION/configure --prefix=$PREFIX --enable-languages=c,c++
 
-    ../gcc-6.3.0/configure --prefix=$PREFIX --enable-languages=c,c++
     make
     sudo make install
 
     # configure ld to find our newly built libraries
-    echo "$PREFIX/lib" > /etc/ld.so.conf.d/gcc-6.3.0.conf
-    echo "$PREFIX/lib32" >> /etc/ld.so.conf.d/gcc-6.3.0.conf
-    echo "$PREFIX/lib64" >> /etc/ld.so.conf.d/gcc-6.3.0.conf
+    echo "$PREFIX/lib" > /etc/ld.so.conf.d/gcc-$VERSION.conf
+    echo "$PREFIX/lib32" >> /etc/ld.so.conf.d/gcc-$VERSION.conf
+    echo "$PREFIX/lib64" >> /etc/ld.so.conf.d/gcc-$VERSION.conf
     sudo ldconfig
 
 #### git 2.9.4 (optional)
@@ -53,18 +56,20 @@ Wheezy comes with a pretty old git version, follow these steps to build a more r
     wget https://www.kernel.org/pub/software/scm/git/git-2.9.4.tar.xz
     cd git-2.9.4
     ./configure
-    make
-    make install
 
-#### libxkbcommon
+    make
+    sudo make install
+
+#### libxkbcommon 0.4.1
 Since this library is not present on debian wheezy we have to build it ourselves.
 
     wget --no-check-certificate http://xkbcommon.org/download/libxkbcommon-0.4.1.tar.xz
     tar xf libxkbcommon-0.4.1.tar.xz
     cd libxkbcommon-0.4.1
     ./configure
+
     make
-    make install
+    sudo make install
 
 #### Qt 5.6.0
     # get the qt source
@@ -88,4 +93,7 @@ Since this library is not present on debian wheezy we have to build it ourselves
         -qt-zlib -qt-libpng -qt-libjpeg -qt-harfbuzz -qt-pcre \
         -system-xcb -system-freetype -dbus-linked -system-xkbcommon-x11 \
         -no-mtdev -no-journald -no-syslog -no-pulseaudio -no-alsa -no-evdev -no-tslib -no-glib -no-eglfs -no-kms -no-gbm -no-linuxfb -no-directfb -no-mirclient -no-gstreamer -no-sql-sqlite -no-xinput2 -no-xvideo -no-xkbcommon-evdev -no-xinerama \
-        -skip qt3d -skip qtcanvas3d -skip qtenginio -skip qtserialport -skip qtserialbus -skip qtwebchannel -skip qtwebengine -skip qtwebsockets -skip qtwebview -skip qtdoc -skip qtconnectivity -skip qtlocation -skip qtmultimedia -skip qttranslations  
+        -skip qt3d -skip qtcanvas3d -skip qtenginio -skip qtserialport -skip qtserialbus -skip qtwebchannel -skip qtwebengine -skip qtwebsockets -skip qtwebview -skip qtdoc -skip qtconnectivity -skip qtlocation -skip qtmultimedia -skip qttranslations
+
+    make
+    sudo make install
