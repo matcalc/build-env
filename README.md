@@ -1,8 +1,13 @@
 # build-env
+This project aims at providing a deployment environment for Qt Applications on Linux. If you follow the steps below you should end up with the ability to build:
+* 32-/64-bit Qt Applications for Linux
+* 32-/64-bit Qt Applications for Windows
+* 64-bit Qt Applications for Mac
+* Installers for the platforms above with statically linked Qt
 
 ## prerequisites
-* system with rather old glibc and gcc multilib support
-* git
+* system with rather old glibc version
+* gcc/g++ multilib support
 
 ### debian wheezy
 Install the following packages:
@@ -40,7 +45,7 @@ If you want to build your application with recent C++ features a recent GCC is m
     # change version to your liking
     VERSION=5.4.0
     # change prefix to you liking, this is where the new gcc is going to be installed
-    PREFIX=/opt/$VERSION
+    PREFIX=/opt/gcc-$VERSION
 
     wget --no-check-certificate https://ftp.gnu.org/gnu/gcc/gcc-$VERSION/gcc-$VERSION.tar.bz2
     tar xf gcc-$VERSION.tar.bz2
@@ -53,6 +58,7 @@ If you want to build your application with recent C++ features a recent GCC is m
     ../gcc-$VERSION/configure --prefix=$PREFIX --enable-languages=c,c++
     make
     sudo make install
+    sudo ln -sf $PREFIX/bin/gcc $PREFIX/bin/cc
 
     # configure ld to find our newly built libraries
     echo "$PREFIX/lib" > /etc/ld.so.conf.d/gcc-$VERSION.conf
@@ -62,6 +68,38 @@ If you want to build your application with recent C++ features a recent GCC is m
 
     # Update PATH so our newly built gcc is used instead of the system provided one. You might want to make this sticky in your bash startup scripts (~/.bashrc and the like).
     export PATH=$PREFIX/bin:$PATH
+
+### CMake 3.9.0 (optional)
+Follow these steps if you want to build LLVM/Clang or just need a more recent CMake.
+
+    wget https://cmake.org/files/v3.9/cmake-3.9.0.tar.gz
+    tar xf cmake-*.tar.gz
+    cd cmake-*
+    ./configure
+    make
+    sudo make install
+
+### LLVM/Clang 4.0.1 (optional)
+Make sure to install at least GCC 4.8.
+
+    # change version to your liking
+    VERSION=4.0.1
+    # change prefix to you liking, this is where the new gcc is going to be installed
+    PREFIX=/opt/llvm-$VERSION
+
+    wget http://releases.llvm.org/$VERSION/llvm-$VERSION.src.tar.xz
+    tar xf llvm-$VERSION.src.tar.xz
+    cd llvm-$VERSION.src/tools
+    wget http://releases.llvm.org/$VERSION/cfe-$VERSION.src.tar.xz
+    tar xf cfe-$VERSION.src.tar.xz
+    mv cfe-$VERSION.src clang
+    cd ../../
+    [ -d "build-llvm" ] || mkdir build-llvm
+    cd build-llvm
+
+    rm -rf ./* && cmake -G "Unix Makefiles" ../llvm-$VERSION.src
+    make
+    sudo make install
 
 ### git 2.9.4 (optional)
 Wheezy comes with a pretty old git version, follow these steps to build a more recent one.
@@ -73,7 +111,8 @@ Wheezy comes with a pretty old git version, follow these steps to build a more r
     make install
 
 ### Qt 5.6.0
-In the following steps we will build 32-/64-bit dynamic/static Qt libraries and tools for Linux and setup a cross build environment for Windows and Mac.
+In the following steps we will build 32-/64-bit dynamic/static Qt libraries and tools for Linux and setup a cross build environment for Windows and Mac. The static libraries are used to build the application installers using the [Qt Installer Framework](https://wiki.qt.io/Qt-Installer-Framework). Keep in mind that whatever you ship with statically linked Qt libraries you have to provide the user means to exchange them, this means either provide the source code or object files, or buy a commercial Qt license.
+
     # get the qt source
     git submodule update --init --recursive
 
@@ -97,6 +136,8 @@ In the following steps we will build 32-/64-bit dynamic/static Qt libraries and 
         -qt-zlib -qt-libpng -qt-libjpeg -qt-harfbuzz -qt-pcre -qt-xkbcommon -qt-xkbcommon-x11 -qt-xcb \
         -no-mtdev -no-journald -no-syslog -no-pulseaudio -no-alsa -no-evdev -no-tslib -no-kms -no-gbm -no-linuxfb -no-directfb -no-mirclient -no-gstreamer -no-sql-sqlite -no-xinput2 -no-xvideo -no-xkb -no-xkbcommon-evdev -no-xinerama \
         -skip qt3d -skip qtcanvas3d -skip qtenginio -skip qtserialport -skip qtserialbus -skip qtwebchannel -skip qtwebengine -skip qtwebsockets -skip qtwebview -skip qtdoc -skip qtconnectivity -skip qtlocation -skip qtmultimedia -skip qttranslations
+
+Check in the configuration summary if the result meets your expectations. You can ignore lacking XCB-GLX support if you have set the -qt-xcb flag. It just means that
 
     make
     make install
