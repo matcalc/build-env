@@ -12,49 +12,17 @@ Install the following packages:
 
     sudo apt-get update
     sudo apt-get install \
-        tar bzip2 \
-        build-essential make bison gettext gcc g++ gcc-multilib g++-multilib \
+        tar bzip2 zip \
+        build-essential make bison gettext texinfo gcc g++ gcc-multilib g++-multilib \
+        gtk2.0-dev libglib2.0-dev \
         libcups2-dev \
         libdbus-1-dev \
         libproxy-dev \
         libicu-dev \
-        libglu1-mesa-dev \
+        libglu1-mesa-dev libegl1-mesa-dev \
         '^libxcb.*-dev' libx11-xcb-dev libxrender-dev libxi-dev libxcb-xkb-dev \
         libssl-dev \
         libfontconfig1-dev
-
-#### GCC 6.3.0 (optional)
-If you want to build with recent C++ features a recent GCC is mandatory.
-
-    wget --no-check-certificate https://ftp.gnu.org/gnu/gcc/gcc-6.3.0/gcc-6.3.0.tar.bz2
-    tar xf gcc-6.3.0.tar.bz2
-    cd gcc-6.3.0/contrib
-    ./download_prerequisites
-    cd ../../
-    mkdir build-gcc
-    cd build-gcc
-
-    # change prefix to you liking, this is where the new gcc is going to be installed
-    PREFIX=/opt/gcc-6.3.0
-
-    ../gcc-6.3.0/configure --prefix=$PREFIX --enable-languages=c,c++
-    make
-    sudo make install
-
-    # configure ld to find our newly built libraries
-    echo "$PREFIX/lib" > /etc/ld.so.conf.d/gcc-6.3.0.conf
-    echo "$PREFIX/lib32" >> /etc/ld.so.conf.d/gcc-6.3.0.conf
-    echo "$PREFIX/lib64" >> /etc/ld.so.conf.d/gcc-6.3.0.conf
-    sudo ldconfig
-
-#### git 2.9.4 (optional)
-Wheezy comes with a pretty old git version, follow these steps to build a more recent one.
-
-    wget https://www.kernel.org/pub/software/scm/git/git-2.9.4.tar.xz
-    cd git-2.9.4
-    ./configure
-    make
-    make install
 
 #### libxkbcommon
 Since this library is not present on debian wheezy we have to build it ourselves.
@@ -66,26 +34,96 @@ Since this library is not present on debian wheezy we have to build it ourselves
     make
     make install
 
-#### Qt 5.6.0
+### GCC 5.4.0 (optional)
+If you want to build your application with recent C++ features a recent GCC is mandatory.
+
+    # change version to your liking
+    VERSION=5.4.0
+    # change prefix to you liking, this is where the new gcc is going to be installed
+    PREFIX=/opt/$VERSION
+
+    wget --no-check-certificate https://ftp.gnu.org/gnu/gcc/gcc-$VERSION/gcc-$VERSION.tar.bz2
+    tar xf gcc-$VERSION.tar.bz2
+    cd gcc-$VERSION/contrib
+    ./download_prerequisites
+    cd ../../
+    mkdir build-gcc
+    cd build-gcc
+
+    ../gcc-$VERSION/configure --prefix=$PREFIX --enable-languages=c,c++
+    make
+    sudo make install
+
+    # configure ld to find our newly built libraries
+    echo "$PREFIX/lib" > /etc/ld.so.conf.d/gcc-$VERSION.conf
+    echo "$PREFIX/lib32" >> /etc/ld.so.conf.d/gcc-$VERSION.conf
+    echo "$PREFIX/lib64" >> /etc/ld.so.conf.d/gcc-$VERSION.conf
+    sudo ldconfig
+
+    # Update PATH so our newly built gcc is used instead of the system provided one. You might want to make this sticky in your bash startup scripts (~/.bashrc and the like).
+    export PATH=$PREFIX/bin:$PATH
+
+### git 2.9.4 (optional)
+Wheezy comes with a pretty old git version, follow these steps to build a more recent one.
+
+    wget https://www.kernel.org/pub/software/scm/git/git-2.9.4.tar.xz
+    cd git-2.9.4
+    ./configure
+    make
+    make install
+
+### Qt 5.6.0
+In the following steps we will build 32-/64-bit dynamic/static Qt libraries and tools for Linux and setup a cross build environment for Windows and Mac.
     # get the qt source
     git submodule update --init --recursive
 
-    # PREFIX being the path where you installed gcc 6.3.0
-    export PATH=$PREFIX/bin:$PATH
+#### Linux 64-bit
 
     # change prefix to you liking, this is where Qt is going to be installed
     PREFIX=/opt/qt-5.6.0-linux-x86_64
 
-    mkdir build-qt
+    [ -d "build-qt" ] || mkdir build-qt
     cd build-qt
-    ../qt-5.6.0/configure \
+
+    # please add/remove flags to accomodate your requirements
+    rm -rf ./* && ../qt-5.6.0/configure \
         --prefix=$PREFIX \
-        -release -pch -strip -no-ltcg -use-gold-linker \
-        -opensource -confirm-license -system-proxies -gtkstyle \
+        -release -force-debug-info -separate-debug-info -pch -strip -no-ltcg -use-gold-linker \
+        -opensource -confirm-license \
+        -system-proxies -system-freetype -dbus-linked -gtkstyle -xkb-config-root /usr/share/X11/xkb \
         -nomake examples -nomake tests \
-        -accessibility -cups -gui -widgets -iconv -icu -libinput -qml-debug -openssl -xcb-xlib -xrender -xcursor -xfixes -xinput  -xshape -xsync -xkb -xrandr  -libproxy -fontconfig \
-        -qpa xcb -opengl desktop \
-        -qt-zlib -qt-libpng -qt-libjpeg -qt-harfbuzz -qt-pcre \
-        -system-xcb -system-freetype -dbus-linked -system-xkbcommon-x11 \
-        -no-mtdev -no-journald -no-syslog -no-pulseaudio -no-alsa -no-evdev -no-tslib -no-glib -no-eglfs -no-kms -no-gbm -no-linuxfb -no-directfb -no-mirclient -no-gstreamer -no-sql-sqlite -no-xinput2 -no-xvideo -no-xkbcommon-evdev -no-xinerama \
-        -skip qt3d -skip qtcanvas3d -skip qtenginio -skip qtserialport -skip qtserialbus -skip qtwebchannel -skip qtwebengine -skip qtwebsockets -skip qtwebview -skip qtdoc -skip qtconnectivity -skip qtlocation -skip qtmultimedia -skip qttranslations  
+        -accessibility -cups -gui -widgets -iconv -icu -libinput -qml-debug -openssl -xcb-xlib -xrender -xcursor -xfixes -xinput  -xshape -xsync -xrandr -libproxy -fontconfig \
+        -qpa xcb -eglfs -opengl desktop \
+        -qt-zlib -qt-libpng -qt-libjpeg -qt-harfbuzz -qt-pcre -qt-xkbcommon -qt-xkbcommon-x11 -qt-xcb \
+        -no-mtdev -no-journald -no-syslog -no-pulseaudio -no-alsa -no-evdev -no-tslib -no-kms -no-gbm -no-linuxfb -no-directfb -no-mirclient -no-gstreamer -no-sql-sqlite -no-xinput2 -no-xvideo -no-xkb -no-xkbcommon-evdev -no-xinerama \
+        -skip qt3d -skip qtcanvas3d -skip qtenginio -skip qtserialport -skip qtserialbus -skip qtwebchannel -skip qtwebengine -skip qtwebsockets -skip qtwebview -skip qtdoc -skip qtconnectivity -skip qtlocation -skip qtmultimedia -skip qttranslations
+
+    make
+    make install
+    cd ..
+
+#### Linux 64-bit static
+The static version of Qt is used to build the installer. If you modified flags in the previous step just be sure to choose another PREFIX for the static version and just add the -static flag to configure.
+
+    # change prefix to you liking, this is where Qt is going to be installed
+    PREFIX=/opt/qt-5.6.0-linux-x86_64-static
+
+    [ -d "build-qt" ] || mkdir build-qt
+    cd build-qt
+
+    # please add/remove flags to accomodate your requirements
+    rm -rf ./* && ../qt-5.6.0/configure \
+        -static --prefix=$PREFIX \
+        -release -force-debug-info -separate-debug-info -pch -strip -no-ltcg -use-gold-linker \
+        -opensource -confirm-license \
+        -system-proxies -system-freetype -dbus-linked -gtkstyle -xkb-config-root /usr/share/X11/xkb \
+        -nomake examples -nomake tests \
+        -accessibility -cups -gui -widgets -iconv -icu -libinput -qml-debug -openssl -xcb-xlib -xrender -xcursor -xfixes -xinput  -xshape -xsync -xrandr -libproxy -fontconfig \
+        -qpa xcb -eglfs -opengl desktop \
+        -qt-zlib -qt-libpng -qt-libjpeg -qt-harfbuzz -qt-pcre -qt-xkbcommon -qt-xkbcommon-x11 -qt-xcb \
+        -no-mtdev -no-journald -no-syslog -no-pulseaudio -no-alsa -no-evdev -no-tslib -no-kms -no-gbm -no-linuxfb -no-directfb -no-mirclient -no-gstreamer -no-sql-sqlite -no-xinput2 -no-xvideo -no-xkb -no-xkbcommon-evdev -no-xinerama \
+        -skip qt3d -skip qtcanvas3d -skip qtenginio -skip qtserialport -skip qtserialbus -skip qtwebchannel -skip qtwebengine -skip qtwebsockets -skip qtwebview -skip qtdoc -skip qtconnectivity -skip qtlocation -skip qtmultimedia -skip qttranslations
+
+    make
+    make install
+    cd ..
