@@ -27,6 +27,7 @@ You may override default paths and versions.
     ./auto.sh # _DONT_EXECUTE_
 
 You may disable optional tools.
+
     BUILD_GCC=no # _DONT_EXECUTE_
     BUILD_LLVM=no # _DONT_EXECUTE_
     BUILD_GIT=no # _DONT_EXECUTE_
