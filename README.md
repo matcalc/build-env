@@ -8,6 +8,32 @@ This project aims at providing a deployment environment for Qt Applications on L
 ## prerequisites
 * system with rather old glibc version
 
+## tl;dr
+If you just want to jump start you may want to execute the auto.sh script. Ignore the comments, they are just a hint for the parsing going on in the script.
+
+    ./auto.sh # _DONT_EXECUTE_
+
+You may override default paths and versions.
+
+    GCC_VERSION=5.4.0 # _DONT_EXECUTE_
+    GCC_PREFIX=/opt/gcc-$GCC_VERSION # _DONT_EXECUTE_
+
+    LLVM_VERSION=4.0.1 # _DONT_EXECUTE_
+    LLVM_PREFIX=/opt/llvm-$LLVM_VERSION # _DONT_EXECUTE_
+
+    QT_LINUX_64_PREFIX=/opt/qt-5.6.0-linux-x86_64 # _DONT_EXECUTE_
+    QT_LINUX_64_STATIC_PREFIX=/opt/qt-5.6.0-linux-x86_64-static # _DONT_EXECUTE_
+
+    ./auto.sh # _DONT_EXECUTE_
+
+You may disable optional tools.
+    BUILD_GCC=no # _DONT_EXECUTE_
+    BUILD_LLVM=no # _DONT_EXECUTE_
+    BUILD_GIT=no # _DONT_EXECUTE_
+    BUILD_CMAKE=no # _DONT_EXECUTE_
+
+    ./auto.sh # _DONT_EXECUTE_
+
 ### debian wheezy
 Install the following packages:
 
@@ -33,7 +59,7 @@ Install the following packages:
 #### 32-bit Linux environment
 
     # change path to you liking, this is where the 32-bit debian system is going to be installed
-    CHROOT=/chroot-32
+    [ "$CHROOT" == "" ] && CHROOT=/chroot-32
 
     su -c "
       [ -d "$CHROOT" ] || mkdir $CHROOT
@@ -91,12 +117,12 @@ Since this library is not present on debian wheezy we have to build it ourselves
 If you want to build your application with recent C++ features a recent GCC is mandatory.
 
     # change version to your liking
-    GCC_VERSION=5.4.0
+    [ "$GCC_VERSION" == "" ] && GCC_VERSION=5.4.0
     # change prefix to you liking, this is where the new gcc is going to be installed
-    GCC_PREFIX=/opt/gcc-$GCC_VERSION
+    [ "$GCC_PREFIX" == "" ] && GCC_PREFIX=/opt/gcc-$GCC_VERSION
 
     # delete installation folder of previous build to rebuild
-    [ -d "$GCC_PREFIX" ] || {
+    [ "$BUILD_GCC" == "no" ] || [ -d "$GCC_PREFIX" ] || {
       [ -f "gcc-$GCC_VERSION.tar.bz2" ] || {
         wget --no-check-certificate https://ftp.gnu.org/gnu/gcc/gcc-$GCC_VERSION/gcc-$GCC_VERSION.tar.bz2
         tar xf gcc-$GCC_VERSION.tar.bz2
@@ -137,7 +163,7 @@ Follow these steps if you want to build LLVM/Clang or just need a more recent CM
     }
 
     # delete .done file to rebuild
-    [ -f "cmake-3.9.0/.done" ] || {
+    [ "$BUILD_CMAKE" == "no" ] || [ -f "cmake-3.9.0/.done" ] || {
       cd cmake-3.9.0
       ./configure
       make
@@ -150,12 +176,20 @@ Follow these steps if you want to build LLVM/Clang or just need a more recent CM
 Make sure to install at least GCC 4.8.
 
     # change version to your liking
-    LLVM_VERSION=4.0.1
+    [ "$LLVM_VERSION" == "" ] && LLVM_VERSION=4.0.1
     # change prefix to you liking, this is where the new gcc is going to be installed
-    LLVM_PREFIX=/opt/llvm-$LLVM_VERSION
+    [ "$LLVM_PREFIX" == "" ] && LLVM_PREFIX=/opt/llvm-$LLVM_VERSION
 
     # delete installation folder of previous build to rebuild
-    [ -d "$LLVM_PREFIX" ] || {
+    [ "$BUILD_LLVM" == "no" ] || [ -d "$LLVM_PREFIX" ] || {
+      [ "$BUILD_GCC" == "no" ] && {
+        echo building LLVM requires a recent gcc
+        exit 1
+      }
+      [ "$BUILD_CMAKE" == "no" ] && {
+        echo building LLVM requires a recent CMake
+        exit 1
+      }
       [ -f "llvm-$LLVM_VERSION.src.tar.xz" ] || {
         wget http://releases.llvm.org/$LLVM_VERSION/llvm-$LLVM_VERSION.src.tar.xz
         tar xf llvm-$LLVM_VERSION.src.tar.xz
@@ -194,7 +228,7 @@ Make sure to install at least GCC 4.8.
 Wheezy comes with a pretty old git version, follow these steps to build a more recent one.
 
     # delete .done file to rebuild
-    [ -f "git-2.9.4/.done" ] || {
+    [ "$BUILD_GIT" == "no" ] || [ -f "git-2.9.4/.done" ] || {
       [ -f "git-2.9.4.tar.xz" ] || {
         wget https://www.kernel.org/pub/software/scm/git/git-2.9.4.tar.xz
         tar xf git-2.9.4.tar.xz
@@ -216,7 +250,7 @@ In the following steps we will build 32-/64-bit dynamic/static Qt libraries and 
 #### Linux 64-bit
 
     # change prefix to you liking, this is where Qt is going to be installed
-    QT_LINUX_64_PREFIX=/opt/qt-5.6.0-linux-x86_64
+    [ "$QT_LINUX_64_PREFIX" == "" ] && QT_LINUX_64_PREFIX=/opt/qt-5.6.0-linux-x86_64
 
     # delete installation folder of previous build to rebuild
     [ -d "$QT_LINUX_64_PREFIX" ] || {
@@ -246,7 +280,7 @@ In the following steps we will build 32-/64-bit dynamic/static Qt libraries and 
 The static version of Qt is used to build the installer. If you modified flags in the previous step just add the -static flag to your configuration options. Also you might want to disable OpenGL, EGL and whatever you think you might not need for the installer application.
 
     # change prefix to you liking, this is where Qt is going to be installed
-    QT_LINUX_64_STATIC_PREFIX=/opt/qt-5.6.0-linux-x86_64-static
+    [ "$QT_LINUX_64_STATIC_PREFIX" == "" ] && QT_LINUX_64_STATIC_PREFIX=/opt/qt-5.6.0-linux-x86_64-static
 
     # delete installation folder of previous build to rebuild
     [ -d "$QT_LINUX_64_STATIC_PREFIX" ] || {
