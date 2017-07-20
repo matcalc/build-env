@@ -63,14 +63,14 @@ Install the following packages:
     [ "$CHROOT" == "" ] && CHROOT=/chroot-32
 
     su -c "
-      [ -d "$CHROOT" ] || mkdir $CHROOT
+      [ -d \"$CHROOT\" ] || mkdir $CHROOT
 
       # delete .done file to rebuild
-      [ -f "$CHROOT/.done" ] || {
-        debootstrap wheezy "$CHROOT" http://httpredir.debian.org/debian/"
-        mount --bind /dev ""$CHROOT/dev"
-        mount --bind /dev/pts "$CHROOT/dev/pts"
-        chroot "$CHROOT"
+      [ -f \"$CHROOT/.done\" ] || {
+        debootstrap --arch i386 wheezy \"$CHROOT\" http://httpredir.debian.org/debian/
+        mount --bind /dev \"$CHROOT/dev\"
+        mount --bind /dev/pts \"$CHROOT/dev/pts\"
+        chroot \"$CHROOT\"
         mount -t proc proc /proc
         mount -t sys sysfs /sys
 
@@ -144,12 +144,12 @@ If you want to build your application with recent C++ features a recent GCC is m
       cd ..
 
       # configure ld to find our newly built libraries
-      su -c '
-        echo "$GCC_PREFIX/lib" > /etc/ld.so.conf.d/gcc-$GCC_VERSION.conf
-        echo "$GCC_PREFIX/lib32" >> /etc/ld.so.conf.d/gcc-$GCC_VERSION.conf
-        echo "$GCC_PREFIX/lib64" >> /etc/ld.so.conf.d/gcc-$GCC_VERSION.conf
+      su -c "
+        echo \"$GCC_PREFIX/lib\" > /etc/ld.so.conf.d/gcc-$GCC_VERSION.conf
+        echo \"$GCC_PREFIX/lib32\" >> /etc/ld.so.conf.d/gcc-$GCC_VERSION.conf
+        echo \"$GCC_PREFIX/lib64\" >> /etc/ld.so.conf.d/gcc-$GCC_VERSION.conf
         ldconfig
-      '
+      "
 
       # Update PATH so our newly built gcc is used instead of the system provided one. You might want to make this sticky in your bash startup scripts (~/.bashrc and the like).
       export PATH=$GCC_PREFIX/bin:$PATH
