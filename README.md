@@ -162,7 +162,7 @@ Since this library is not present on debian wheezy we have to build it ourselves
       su -c "make install"
       make distclean
       # now build 32-bit version
-      CFLAGS="-I$CHROOT/usr/include -I$CHROOT/usr/include/i386-linux-gnu" CXXFLAGS=$CFLAGS CC=""$CHROOT/bin/gcc" ./configure --prefix="$CHROOT/usr/local" --host=i386-pc-linux-gnu
+      CFLAGS="-I$CHROOT/usr/include -I$CHROOT/usr/include/i386-linux-gnu" CXXFLAGS=$CFLAGS CC="$CHROOT/usr/bin/gcc" ./configure --prefix="$CHROOT/usr/local" --host=i386-pc-linux-gnu
       make
       su -c "make install"
       touch .done
@@ -215,7 +215,17 @@ If you want to build your application with recent C++ features a recent GCC is m
       cd ..
 
       # Update PATH so our newly built gcc is used instead of the system provided one.
-      su -c "echo \"PATH=$GCC_PREFIX/bin:$PATH\" >> /etc/bash.bashrc"
+      su -c "
+        echo \"export PATH=$GCC_PREFIX/bin:$ _PATH_\" >> /etc/bash.bashrc
+        sed -i "s/\s_PATH_/PATH/g" /etc/bash.bashrc
+        . /etc/bash.bashrc
+      "
+
+      # configure ld to find our newly built libraries (libstdc++ and gcc support libraries)
+      su -c "
+          echo $GCC_PREFIX/lib64 >> /etc/ld.so.conf.d/gcc-$GCC_VERSION.conf
+          ldconfig
+      "
 
       su -c "
         [ -d \"$CHROOT/tools\" ] || mkdir \"$CHROOT/tools\"
@@ -248,21 +258,30 @@ If you want to build your application with recent C++ features a recent GCC is m
                 --enable-languages=c,c++ \
                 --disable-multilib
           make
-          make install
+          su -c "
+              make install
+              ln -sf "$GCC_PREFIX/bin/gcc" "$GCC_PREFIX/bin/cc"
+            "
+            cd ..
+
+            # Update PATH so our newly built gcc is used instead of the system provided one.
+            su -c "
+              echo \"export PATH=$GCC_PREFIX/bin:$ _PATH_\" >> /etc/bash.bashrc
+              sed -i "s/\s_PATH_/PATH/g" /etc/bash.bashrc
+              . /etc/bash.bashrc
+            "
+
+            # configure ld to find our newly built libraries (libstdc++ and gcc support libraries)
+            su -c "
+                echo $GCC_PREFIX/lib32 >> /etc/ld.so.conf.d/gcc-$GCC_VERSION.conf
+                ldconfig
+            "
+
           exit
         \"
 
         cd \"$CURDIR\"
       "
-
-      # configure ld to find our newly built libraries (libstdc++ and gcc support libraries)
-      #su -c "
-      #    echo \"$GCC_PREFIX/lib\" > /etc/ld.so.conf.d/gcc-$GCC_VERSION.conf
-      #    echo \"$GCC_PREFIX/lib32\" >> /etc/ld.so.conf.d/gcc-$GCC_VERSION.conf
-      #    echo \"$GCC_PREFIX/lib64\" >> /etc/ld.so.conf.d/gcc-$GCC_VERSION.conf
-      #    ldconfig
-      "
-
 
     }
 
@@ -281,8 +300,9 @@ Follow these steps if you want to build LLVM/Clang or just need a more recent CM
 
     # delete .done file to rebuild
     [ "$BUILD_CMAKE" == "no" ] || [ -f "cmake-3.9.0/.done" ] || {
-      cd cmake-3.9.0
-      ./configure
+      [ -d "build-cmake" ] || mkdir build-cmake
+      cd build-cmake
+      rm -rf ./* && ../cmake-3.9.0/configure
       make
       su -c "make install"
       touch .done
@@ -329,16 +349,22 @@ Make sure to install at least GCC 4.8.
             -DCMAKE_CXX_COMPILER="$GCC_PREFIX/bin/g++" \
             -DGCC_INSTALL_PREFIX:PATH="$GCC_PREFIX" \
             -DCMAKE_CXX_LINK_FLAGS="-L$GCC_PREFIX/lib -Wl,-rpath,$GCC_PREFIX/lib -L$GCC_PREFIX/lib32 -Wl,-rpath,$GCC_PREFIX/lib32 -L$GCC_PREFIX/lib64 -Wl,-rpath,$GCC_PREFIX/lib64" \
-            -DCMAKE_BUILD_TYPE:STRING="RelWithDebInfo" \
+            -DCMAKE_BUILD_TYPE:STRING="Release" \
             -DLLVM_TARGETS_TO_BUILD:STRING="X86" \
             -DLLVM_INCLUDE_EXAMPLES:BOOL=OFF \
             -DLLVM_INCLUDE_TESTS:BOOL=OFF \
-            -DCMAKE_C_COMPILER=clang \
-            -DCMAKE_CXX_COMPILER=clang++ \
         ../llvm-$LLVM_VERSION.src
 
       make
-      su -c "make install"
+      
+      su -c "
+        make install
+        # Update PATH so our newly built llvm is used instead of the system provided one.
+        echo \"export PATH=$LLVM_PREFIX/bin:$ _PATH_\" >> /etc/bash.bashrc
+        sed -i \"s/\s_PATH_/PATH/g\" /etc/bash.bashrc
+        . /etc/bash.bashrc
+      "
+
       cd ..
     }
 
@@ -347,6 +373,9 @@ Wheezy comes with a pretty old git version, follow these steps to build a more r
 
     # delete .done file to rebuild
     [ "$BUILD_GIT" == "no" ] || [ -f "git-2.9.4/.done" ] || {
+
+      apt-get install -y -t wheezy-backports libcurl4-openssl-dev libldap2-dev
+
       [ -f "git-2.9.4.tar.xz" ] || {
         wget https://www.kernel.org/pub/software/scm/git/git-2.9.4.tar.xz
         tar xf git-2.9.4.tar.xz
